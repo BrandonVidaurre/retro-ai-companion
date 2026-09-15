@@ -1,0 +1,3 @@
+# Runtime. sqlite3 and urllib are stdlib on purpose — the Pi gets exactly one
+# extra package and nothing else.
+pygame>=2.5,<3

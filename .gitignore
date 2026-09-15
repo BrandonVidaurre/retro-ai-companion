@@ -1,0 +1,19 @@
+# The knowledge base is a build artifact — companion.py reseeds it on first run.
+companion.db
+
+# Screenshot output from `--shots`
+out/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

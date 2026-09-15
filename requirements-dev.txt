@@ -1,0 +1,3 @@
+-r requirements.txt
+pytest>=8
+pillow>=10          # builds the screenshot grid in tools/contact_sheet.py
