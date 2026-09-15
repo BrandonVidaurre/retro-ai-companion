@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    env:
+      # pygame needs a video driver even when nothing is displayed.
+      SDL_VIDEODRIVER: dummy
+      SDL_AUDIODRIVER: dummy
+      # Guard rail: the suite must pass with no provider configured.
+      # If a test ever reaches the network, it fails loudly instead of
+      # silently costing money.
+      GROQ_API_KEY: ""
+      GEMINI_API_KEY: ""
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install system fonts
+        # SysFont() falls back to a bitmap default with no fonts installed,
+        # which makes the rendered screenshots useless for layout review.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends fonts-dejavu-core
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
+
+      - name: Run test suite
+        run: pytest -v
+
+      - name: Render all screens headless
+        run: python companion.py --shots out/ --reseed
+
+      - name: Verify screenshots were produced
+        # A silent render failure would otherwise upload an empty artifact
+        # and look green. Twelve screens is the contract.
+        run: |
+          count=$(ls -1 out/*.png 2>/dev/null | wc -l)
+          echo "Rendered $count screens"
+          test "$count" -eq 12
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: screens-py${{ matrix.python-version }}
+          path: out/*.png
+          if-no-files-found: error
+          retention-days: 30
