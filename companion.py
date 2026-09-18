@@ -65,7 +65,9 @@ KEYMAP = {
 
 # Joystick button indices. Verify on the real hardware with `jstest` and
 # adjust — RetroPie's GPi driver ordering has changed between releases.
-PADMAP = {0: A, 1: B, 2: X, 3: Y, 4: L, 5: R, 6: SELECT, 7: START}
+   # Verified on GPi Case 2W hardware with `jstest --event` (xpad, "X-Box 360 pad").
+   # 6/7 are TL2/TR2, which the GPi doesn't have; Select/Start are 8/9.
+   PADMAP = {0: A, 1: B, 2: X, 3: Y, 4: L, 5: R, 8: SELECT, 9: START}
 
 REPEAT_DELAY_MS = 380     # hold-to-scroll: first repeat
 REPEAT_RATE_MS = 90       # hold-to-scroll: subsequent repeats
