@@ -33,10 +33,10 @@ import pygame  # noqa: E402
 
 HOST, PORT = "127.0.0.1", 4404          # localhost only — never exposed to the LAN
 KEY_FILE = os.path.expanduser("~/.config/companion/gemini.key")
-MODEL = os.environ.get("COMPANION_MODEL", "gemini-2.5-flash")
+MODEL = os.environ.get("COMPANION_MODEL", "gemini-3.6-flash")
 API = "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent"
 LOG_PATH = "/tmp/brain.log"
-TIMEOUT_S = 15
+TIMEOUT_S = 20
 MAX_WORDS = 45
 
 PERSONA = (
@@ -94,8 +94,8 @@ def ask_gemini(key: str, img_b64: str, mime: str, label: str) -> str:
             {"text": prompt},
             {"inline_data": {"mime_type": mime, "data": img_b64}},
         ]}],
-        # Thinking adds seconds of latency; a quip doesn't need it.
-        "generationConfig": {"temperature": 0.9, "thinkingConfig": {"thinkingBudget": 0}},
+        # Measured on the Pi: minimal thinking 1.0s vs default 3.6s. A quip doesn't need it.
+        "generationConfig": {"temperature": 0.9, "thinkingConfig": {"thinkingLevel": "minimal"}},
     }
     try:
         data = _post(key, body)
@@ -212,7 +212,11 @@ class Handler(BaseHTTPRequestHandler):
         else:
             try:
                 reply = ask_gemini(key, img_b64, sniff_mime(raw), label)
-            except (urllib.error.URLError, OSError, TimeoutError):
+            except urllib.error.HTTPError as e:      # Google answered, but said no
+                log("Gemini HTTP {}: {}".format(e.code, e.read().decode(errors="replace")[:300]))
+                reply = "Gemini said no (HTTP {}). Check /tmp/brain.log.".format(e.code)
+            except (urllib.error.URLError, OSError, TimeoutError) as e:
+                log("network error: {}".format(e))
                 reply = "No signal. Guess you're on your own, hero."
             except (KeyError, IndexError, ValueError) as e:
                 log("unexpected Gemini response: {}".format(e))
